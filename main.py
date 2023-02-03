@@ -1,6 +1,7 @@
 import fastf1 as ff1
 from fastf1 import plotting
 from matplotlib import pyplot as plt
+from timple.timedelta import strftimedelta
 
 ff1.Cache.enable_cache('./cache')
 # FastF1's default color scheme
@@ -14,7 +15,7 @@ def get_weather_data(place, year=2023, session='Q'):
     session = ff1.get_session(year, place, session)
     session.load(telemetry=True)
     weather_data = session.laps.pick_fastest().get_weather_data()
-
+    print(weather_data)
     return weather_data
 
 
@@ -36,10 +37,11 @@ def make_graphic(first_pilot, second_pilot, place, year):
     # Get the drivers data
     pilot1 = get_pilot_data(place=place, pilot=first_pilot, year=year)
     pilot2 = get_pilot_data(place=place, pilot=second_pilot, year=year)
-    pilot1_laptime = pilot1['Time'].iloc[-1]
-    pilot2_laptime = pilot2['Time'].iloc[-1] - pilot2['Time'].iloc[0]
-    print(f"{first_pilot} laptime: {pilot1_laptime}")
+    pilot1_laptime = strftimedelta(pilot1['Time'].iloc[-1], '%m:%s.%ms')
+    pilot2_laptime = strftimedelta(pilot2['Time'].iloc[-1], '%m:%s.%ms')
+    # Get the weather data
     weather = get_weather_data(place=place, year=year)
+    cardinal = ['N', 'NE', 'E', 'SE', 'S', 'SW', 'W', 'NW']
 
     # Plot the data
     fig, (ax1, ax2, ax3, ax4) = plt.subplots(4)
@@ -77,7 +79,13 @@ def make_graphic(first_pilot, second_pilot, place, year):
         ax.label_outer()
 
     # Qualifying info
-    fig.text(x=0.05, y=0.95, s="Testing but it's long")
+    fig.text(x=0.05, y=0.95, s=f"{first_pilot} best lap: {pilot1_laptime}\n"
+                               f"{second_pilot} best lap: {pilot2_laptime}")
+    # Weather info
+    fig.text(x=0.85, y=0.93, s=f"Track temperature: {weather[5]}°C\n"
+                               # Get the cardinal direction from the wind direction
+                               f"Wind Direction: {cardinal[weather[6]//45%7]}\n"
+                               f"Wind speed: {weather[7]}km/h")
     fig.suptitle(f"{place} {year} Qualifying!")
     # Figure info
     fig.set_size_inches(16, 9)
